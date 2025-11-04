@@ -54,6 +54,6 @@ def load_sentiment_data(file_path: str) -> pd.DataFrame:
 
 # Exemple d'usage
 if __name__ == "__main__":
-    df = load_sentiment_data("data/IMDB Dataset.csv")
+    df = load_sentiment_data(r"C:\Users\jeora\Downloads\dataset.csv")
     print(df.head())
     print(df['sentiment'].value_counts())
