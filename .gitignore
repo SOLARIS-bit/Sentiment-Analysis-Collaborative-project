@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environnements virtuels (ignore ton venv)
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE/Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs et caches
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Données et modèles (gros fichiers, sensibles – recharge-les localement)
+data/
+model_output/
+*.csv  # Ou spécifie IMDB Dataset.csv si tu veux ignorer seulement ça
+*.pkl
+*.h5
+*.pt
+*.bin
+
+# Autres
+README.md.bak
+.DS_Store?
