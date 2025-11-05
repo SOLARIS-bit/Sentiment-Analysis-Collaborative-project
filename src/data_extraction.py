@@ -53,7 +53,7 @@ if __name__ == "__main__":
     df = load_sentiment_data(file_path)
 
     if not df.empty:
-        print(df[['content']].head())
+        print(df.head())
         print(f"\nNombre total de lignes : {len(df)}")
     else:
         print("Aucune donnée chargée.")
