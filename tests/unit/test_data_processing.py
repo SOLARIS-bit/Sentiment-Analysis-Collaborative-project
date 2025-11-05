@@ -3,7 +3,7 @@ import pytest
 import torch
 from transformers import AutoTokenizer
 import pandas as pd
-from data_processing import clean_text, preprocess_texts, tokenize_data
+from src.data_processing import clean_text, preprocess_texts, tokenize_data
 
 def test_clean_text():
     text = "Great movie! <br /> I love it!!!"
