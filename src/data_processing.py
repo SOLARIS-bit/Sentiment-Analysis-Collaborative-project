@@ -19,8 +19,9 @@ def clean_text(text: str) -> str:
     
     # Enlever HTML tags (<br />)
     text = re.sub(r'<.*?>', '', text)
-    # Enlever caractères non-alpha (garder espaces)
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    # Enlever caractères non-alpha (garder espaces et chiffres)
+    # Autorise maintenant les chiffres afin de conserver tokens comme "10"
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
     # Lowercase
     text = text.lower().strip()
     # Normalisation basique (supprimer espaces multiples)
@@ -50,11 +51,11 @@ def preprocess_texts(df: pd.DataFrame, text_col: str = 'content', score_col: str
 
     # Nettoyage du texte
     df[text_col] = df[text_col].apply(clean_text)
-    df = df[df[text_col].str.len() > 10]  # Filtrer textes trop courts
-    
+    df = df[df[text_col].str.len() > 10].copy()  # Filtrer textes trop courts et travailler sur une copie
+
     # Conversion des scores en sentiments binaires : 1 si score > 3 (positif), sinon 0
     # (les tests unitaires attendent un binaire 0/1)
-    df['sentiment'] = df[score_col].apply(lambda x: 1 if x > 3 else 0).astype(int)
+    df.loc[:, 'sentiment'] = df[score_col].apply(lambda x: 1 if x > 3 else 0).astype(int)
     
     logger.info(f"Après nettoyage : {len(df)} lignes avec distribution des sentiments :")
     logger.info(df['sentiment'].value_counts())
