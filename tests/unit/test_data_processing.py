@@ -31,11 +31,12 @@ def test_tokenize_data():
         'content': [
             'Good movie longer than ten chars',
             'Another good movie review',
-            'Third movie review for testing'
+            'Bad movie review not good',
+            'Terrible movie very bad'
         ], 
-        'sentiment': [1, 1, 0]
+        'sentiment': [1, 1, 0, 0]  # 2 positifs, 2 négatifs
     })
-    datasets = tokenize_data(df, text_col='content', test_size=0.33)  # Split 2/1
+    datasets = tokenize_data(df, text_col='content', test_size=0.5)  # Split 50/50
     assert datasets['train']['input_ids'].shape[0] == 1
     assert datasets['train']['labels'].shape == torch.Size([1])
     # Vérifier token IDs (CLS et SEP)
