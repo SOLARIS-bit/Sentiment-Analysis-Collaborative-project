@@ -3,7 +3,7 @@ import pytest
 import pandas as pd
 import tempfile
 import os
-from data_extraction import load_sentiment_data  # Importe ta fonction
+from src.data_extraction import load_sentiment_data  # Importe ta fonction
 
 @pytest.fixture
 def sample_csv(tmp_path):
