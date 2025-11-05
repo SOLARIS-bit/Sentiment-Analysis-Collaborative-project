@@ -21,14 +21,14 @@ def test_clean_text():
     assert len(cleaned) > 0
 
 def test_preprocess_texts():
-    df = pd.DataFrame({'review': ['Test <br /> HTML', ''], 'sentiment': [1, 0]})
+    df = pd.DataFrame({'content': ['Test <br /> HTML', ''], 'score': [4, 2]})
     df_clean = preprocess_texts(df)
     assert len(df_clean) == 1  # Filtre le vide
-    assert 'test html' in df_clean['review'].iloc[0]
+    assert 'test html' in df_clean['content'].iloc[0]
 
 def test_tokenize_data():
-    df = pd.DataFrame({'review': ['Good movie'], 'sentiment': [1]})
-    datasets = tokenize_data(df, test_size=0.0)  # Pas de split pour test
+    df = pd.DataFrame({'content': ['Good movie'], 'sentiment': [1]})
+    datasets = tokenize_data(df, text_col='content', test_size=0.0)  # Pas de split pour test
     assert datasets['train']['input_ids'].shape[0] == 1
     assert datasets['train']['labels'].shape == torch.Size([1])
     # Vérifier token IDs (CLS et SEP)
@@ -40,5 +40,4 @@ def test_tokenize_data():
 if __name__ == "__main__":
     # When this file is executed directly, run pytest on this file so the test
     # functions actually execute and produce output.
-    import pytest
     raise SystemExit(pytest.main([__file__]))
