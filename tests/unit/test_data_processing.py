@@ -21,14 +21,14 @@ def test_clean_text():
     assert len(cleaned) > 0
 
 def test_preprocess_texts():
-    df = pd.DataFrame({'content': ['Test <br /> HTML', ''], 'score': [4, 2]})
+    df = pd.DataFrame({'content': ['Test <br /> HTML content longer than 10 chars', ''], 'score': [4, 2]})
     df_clean = preprocess_texts(df)
     assert len(df_clean) == 1  # Filtre le vide
-    assert 'test html' in df_clean['content'].iloc[0]
+    assert 'test html content longer than chars' in df_clean['content'].iloc[0]
 
 def test_tokenize_data():
-    df = pd.DataFrame({'content': ['Good movie'], 'sentiment': [1]})
-    datasets = tokenize_data(df, text_col='content', test_size=0.0)  # Pas de split pour test
+    df = pd.DataFrame({'content': ['Good movie longer than ten chars'], 'sentiment': [1]})
+    datasets = tokenize_data(df, text_col='content', test_size=0.1)  # Petit split pour test
     assert datasets['train']['input_ids'].shape[0] == 1
     assert datasets['train']['labels'].shape == torch.Size([1])
     # Vérifier token IDs (CLS et SEP)
