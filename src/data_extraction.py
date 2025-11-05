@@ -3,48 +3,43 @@ import pandas as pd
 import os
 import logging
 
-# Setup logging pour tracer les erreurs
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def load_sentiment_data(file_path: str) -> pd.DataFrame:
     """
-    Charge les données de sentiment depuis un fichier CSV.
-    Colonnes attendues : 'review' (texte), 'sentiment' ('positive'/'negative').
-    Convertit 'sentiment' en 0/1. Gère les erreurs gracefully.
+    Charge les données depuis un fichier CSV (dataset d'avis Google Play).
+    Ne fait pas d'analyse de sentiment. 
+    Vérifie simplement la présence des colonnes et nettoie les données.
     
     Args:
-        file_path (str): Chemin vers le CSV.
+        file_path (str): chemin vers le fichier CSV.
     
     Returns:
-        pd.DataFrame: DataFrame nettoyé, ou vide si erreur.
+        pd.DataFrame: DataFrame nettoyé
     """
     if not os.path.exists(file_path):
         logger.error(f"Fichier manquant : {file_path}")
         return pd.DataFrame()
-    
+
     try:
         df = pd.read_csv(file_path)
-        logger.info(f"Données chargées : {len(df)} lignes.")
-        
-        # Vérifier colonnes
-        required_cols = ['review', 'sentiment']
-        if not all(col in df.columns for col in required_cols):
-            logger.error(f"Colonnes manquantes. Attendues : {required_cols}")
+        logger.info(f"Données chargées : {len(df)} lignes, colonnes : {df.columns.tolist()}")
+
+        # Vérifier la présence de la colonne de texte
+        if 'content' not in df.columns:
+            logger.error("Colonne 'content' manquante dans le dataset.")
             return pd.DataFrame()
-        
-        # Convertir sentiment en numérique
-        df['sentiment'] = df['sentiment'].map({'positive': 1, 'negative': 0})
-        if df['sentiment'].isnull().any():
-            logger.warning("Valeurs inattendues dans 'sentiment' – remplies par NaN.")
-        
-        # Supprimer lignes vides
-        df = df.dropna(subset=['review', 'sentiment'])
-        df = df[df['review'].str.len() > 0]
-        
-        logger.info(f"DataFrame final : {len(df)} lignes, colonnes : {df.columns.tolist()}")
+
+        # Nettoyer le texte
+        df['content'] = df['content'].astype(str).str.strip()
+        df = df.dropna(subset=['content'])
+        df = df[df['content'].str.len() > 0]
+
+        logger.info(f"DataFrame nettoyé : {len(df)} lignes.")
         return df
-    
+
     except pd.errors.EmptyDataError:
         logger.error("Fichier CSV vide.")
         return pd.DataFrame()
@@ -54,5 +49,11 @@ def load_sentiment_data(file_path: str) -> pd.DataFrame:
 
 # Exemple d'usage
 if __name__ == "__main__":
-    df = load_sentiment_data(r"C:\Users\jeora\Downloads\dataset.csv")
-    print(df.head())
+    file_path = r"C:\Users\jeora\Downloads\dataset.csv"
+    df = load_sentiment_data(file_path)
+
+    if not df.empty:
+        print(df[['content']].head())
+        print(f"\nNombre total de lignes : {len(df)}")
+    else:
+        print("Aucune donnée chargée.")
