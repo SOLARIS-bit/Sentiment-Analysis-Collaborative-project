@@ -37,8 +37,11 @@ def test_tokenize_data():
         'sentiment': [1, 1, 0, 0]  # 2 positifs, 2 négatifs
     })
     datasets = tokenize_data(df, text_col='content', test_size=0.5)  # Split 50/50
-    assert datasets['train']['input_ids'].shape[0] == 1
-    assert datasets['train']['labels'].shape == torch.Size([1])
+    # Vérifier les dimensions (2 exemples dans train, 2 dans val)
+    assert datasets['train']['input_ids'].shape[0] == 2
+    assert datasets['train']['labels'].shape == torch.Size([2])
+    assert datasets['val']['input_ids'].shape[0] == 2
+    assert datasets['val']['labels'].shape == torch.Size([2])
     # Vérifier token IDs (CLS et SEP)
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
     expected = tokenizer('good movie')['input_ids']
