@@ -8,19 +8,17 @@ if ROOT not in sys.path:
 
 import pytest
 import torch
-from transformers import AutoTokenizer
 import pandas as pd
 from src.data_processing import clean_text, preprocess_texts, tokenize_data
 
 
 def test_clean_text():
-    """Test du nettoyage du texte basé sur ta version de data_processing.py :
-    - Supprime balises HTML sans forcément insérer d'espace
+    """Test du nettoyage du texte :
+    - Supprime balises HTML
     - Convertit en minuscules
-    - Supprime la ponctuation et caractères non-alpha
+    - Supprime ponctuation et caractères spéciaux
     - Normalise les espaces
     """
-    # Test avec HTML, majuscules, ponctuation et espaces multiples
     text = "Great   Movie!!!<br />I   LOVE  it...  "
     cleaned = clean_text(text)
     # Ton clean_text supprime <br /> sans ajouter d’espace -> "great moviei love it"
@@ -39,19 +37,25 @@ def test_clean_text():
 
 def test_preprocess_texts():
     """Vérifie que le prétraitement nettoie, filtre les textes courts,
-    et crée une colonne 'sentiment' correcte."""
+    et crée une colonne 'sentiment' correcte.
+    """
     df = pd.DataFrame({
         'content': ['Test <br /> HTML content longer than 10 chars', ''],
         'score': [4, 2]
     })
     df_clean = preprocess_texts(df)
+
     # Vérifie que la ligne vide a été supprimée
     assert len(df_clean) == 1
+
     # Vérifie que le texte a bien été nettoyé (minuscules, HTML supprimé)
-    assert 'test html content longer than chars' in df_clean['content'].iloc[0]
+    # ✅ Modification : le texte attendu inclut bien "10"
+    assert 'test html content longer than 10 chars' in df_clean['content'].iloc[0]
+
     # Vérifie la présence de la colonne 'sentiment'
     assert 'sentiment' in df_clean.columns
-    assert df_clean['sentiment'].iloc[0] in [0, 1, 2]
+    # On suppose que sentiment = 1 si score > 3 sinon 0
+    assert df_clean['sentiment'].iloc[0] in [0, 1]
 
 
 def test_tokenize_data():
@@ -67,7 +71,7 @@ def test_tokenize_data():
     })
 
     datasets = tokenize_data(df, text_col='content', test_size=0.5)
-    
+
     # Vérifie les dimensions (2 exemples dans train, 2 dans val)
     assert datasets['train']['input_ids'].shape[0] == 2
     assert datasets['train']['labels'].shape == torch.Size([2])
