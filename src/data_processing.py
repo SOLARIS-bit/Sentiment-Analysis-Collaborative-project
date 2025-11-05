@@ -1,117 +1,124 @@
+# data_processing.py
 import re
-import pandas as pd
-import torch
+import numpy as np
 from sklearn.model_selection import train_test_split
 from transformers import AutoTokenizer
+import pandas as pd
+import logging
+import torch
 
-# ======================================
-# 1️⃣ Nettoyage du texte
-# ======================================
+logger = logging.getLogger(__name__)
 
 def clean_text(text: str) -> str:
     """
-    Nettoyage inspiré de l'approche Kaggle :
-    - Supprime les balises HTML
-    - Convertit en minuscules
-    - Supprime la ponctuation et les caractères spéciaux
-    - Normalise les espaces
+    Nettoie le texte : enlève HTML, ponctuation/non-alpha, lowercase, normalisation basique.
+    Inspiré du Kaggle : remove <br />, etc.
     """
-    if not isinstance(text, str):
+    if pd.isna(text):
         return ""
-
-    # Remplacer les balises HTML et entités par un espace
-    text = re.sub(r"<.*?>", " ", text)
-    text = re.sub(r"&\w+;", " ", text)
-
-    # Tout en minuscules
-    text = text.lower()
-
-    # Supprimer tout sauf lettres, chiffres et espaces
-    text = re.sub(r"[^a-z0-9\s]", " ", text)
-
-    # Réduire les espaces multiples
-    text = re.sub(r"\s+", " ", text).strip()
-
+    
+    # Enlever HTML tags (<br />)
+    text = re.sub(r'<.*?>', '', text)
+    # Enlever caractères non-alpha (garder espaces)
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    # Lowercase
+    text = text.lower().strip()
+    # Normalisation basique (supprimer espaces multiples)
+    text = re.sub(r'\s+', ' ', text)
+    
     return text
 
-
-# ======================================
-# 2️⃣ Prétraitement du DataFrame
-# ======================================
-
-def preprocess_texts(df: pd.DataFrame,
-                     text_col: str = "content",
-                     score_col: str = "score",
-                     min_len: int = 10) -> pd.DataFrame:
+def preprocess_texts(df: pd.DataFrame, text_col: str = 'content', score_col: str = 'score') -> pd.DataFrame:
     """
-    - Nettoie le texte
-    - Filtre les textes vides ou trop courts
-    - Crée une colonne 'sentiment' à partir du score (0 = négatif, 1 = neutre, 2 = positif)
+    Applique le nettoyage au texte et convertit les scores en sentiments.
+    
+    Args:
+        df: DataFrame avec les avis
+        text_col: nom de la colonne contenant le texte (default: 'content')
+        score_col: nom de la colonne contenant le score (default: 'score')
+    
+    Returns:
+        DataFrame avec textes nettoyés et sentiments convertis
     """
-    df = df.copy()
+    if text_col not in df.columns:
+        logger.error(f"Colonne {text_col} manquante dans le dataset")
+        return pd.DataFrame()
+        
+    if score_col not in df.columns:
+        logger.error(f"Colonne {score_col} manquante dans le dataset")
+        return pd.DataFrame()
 
     # Nettoyage du texte
-    df.loc[:, text_col] = df[text_col].fillna("").apply(clean_text)
-
-    # Filtrer les textes trop courts
-    df = df[df[text_col].str.len() > min_len].reset_index(drop=True)
-
-    # Mapper le score (1-5) vers des classes sentiment
-    if score_col in df.columns:
-        df.loc[:, "sentiment"] = df[score_col].apply(
-            lambda x: 0 if x <= 2 else (2 if x >= 4 else 1)
-        )
-
+    df[text_col] = df[text_col].apply(clean_text)
+    df = df[df[text_col].str.len() > 10]  # Filtrer textes trop courts
+    
+    # Conversion des scores en sentiments binaires : 1 si score > 3 (positif), sinon 0
+    # (les tests unitaires attendent un binaire 0/1)
+    df['sentiment'] = df[score_col].apply(lambda x: 1 if x > 3 else 0).astype(int)
+    
+    logger.info(f"Après nettoyage : {len(df)} lignes avec distribution des sentiments :")
+    logger.info(df['sentiment'].value_counts())
+    
     return df
 
-
-# ======================================
-# 3️⃣ Tokenisation et création des datasets
-# ======================================
-
-def tokenize_data(df: pd.DataFrame,
-                  text_col: str = "content",
-                  label_col: str = "sentiment",
-                  tokenizer_name: str = "bert-base-uncased",
-                  max_length: int = 128,
-                  test_size: float = 0.2,
-                  random_state: int = 42):
+def tokenize_data(df: pd.DataFrame, text_col: str = 'content', max_length: int = 512, test_size: float = 0.2) -> dict:
     """
-    - Nettoie le texte (prétraitement)
-    - Split en train/val
-    - Tokenise avec AutoTokenizer (Hugging Face)
-    - Retourne des dictionnaires de tenseurs torch :
-      {'train': {...}, 'val': {...}}
+    Tokenise avec BERT tokenizer. Split train/val.
+    Retourne dict : {'train': tensors, 'val': tensors} avec input_ids, attention_mask, labels.
     """
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-
-    # Nettoyage et filtrage
-    df_clean = preprocess_texts(df, text_col=text_col)
-
-    if len(df_clean) < 2:
-        raise ValueError("Pas assez de données après nettoyage pour split train/val")
-
-    # Split train/val
-    train_df, val_df = train_test_split(
-        df_clean,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=df_clean[label_col] if label_col in df_clean else None,
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    
+    texts = df[text_col].tolist()
+    labels = df['sentiment'].tolist()
+    
+    # Tokeniser
+    encodings = tokenizer(
+        texts,
+        truncation=True,
+        padding=True,
+        max_length=max_length,
+        return_tensors='pt'  # PyTorch tensors pour BERT
     )
+    
+    # Split
+    train_texts, val_texts, train_labels, val_labels = train_test_split(
+        texts, labels, test_size=test_size, random_state=42, stratify=labels
+    )
+    
+    # Tokeniser splits séparément (pour éviter fuites, mais ici on tokenise tout d'abord pour simplicité)
+    # Note : En prod, tokenise après split
+    train_enc = tokenizer(train_texts, truncation=True, padding=True, max_length=max_length, return_tensors='pt')
+    val_enc = tokenizer(val_texts, truncation=True, padding=True, max_length=max_length, return_tensors='pt')
+    
+    train_dataset = {
+        'input_ids': train_enc['input_ids'],
+        'attention_mask': train_enc['attention_mask'],
+        'labels': torch.tensor(train_labels)
+    }
+    val_dataset = {
+        'input_ids': val_enc['input_ids'],
+        'attention_mask': val_enc['attention_mask'],
+        'labels': torch.tensor(val_labels)
+    }
+    
+    logger.info(f"Split : Train {len(train_texts)}, Val {len(val_texts)}")
+    return {'train': train_dataset, 'val': val_dataset}
 
-    def tokenize_df(dataframe):
-        encodings = tokenizer(
-            dataframe[text_col].tolist(),
-            truncation=True,
-            padding=True,
-            max_length=max_length,
-            return_tensors="pt",
-        )
-        labels = torch.tensor(dataframe[label_col].tolist(), dtype=torch.long)
-        encodings["labels"] = labels
-        return encodings
-
-    train_enc = tokenize_df(train_df)
-    val_enc = tokenize_df(val_df)
-
-    return {"train": train_enc, "val": val_enc}
+# Exemple d'usage
+if __name__ == "__main__":
+    from data_extraction import load_sentiment_data
+    
+    # Chemin vers votre fichier de données
+    file_path = r"C:\Users\jeora\Downloads\dataset.csv"
+    
+    # Chargement et prétraitement
+    df = load_sentiment_data(file_path)
+    if not df.empty:
+        df_clean = preprocess_texts(df)
+        if not df_clean.empty:
+            datasets = tokenize_data(df_clean, text_col='content')
+            print("\nExemple de dimensions des données :")
+            print("Train input_ids shape:", datasets['train']['input_ids'].shape)
+            print("Val input_ids shape:", datasets['val']['input_ids'].shape)
+        else:
+            print("Erreur lors du prétraitement des données")
