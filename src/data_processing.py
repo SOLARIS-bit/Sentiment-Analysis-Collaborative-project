@@ -28,16 +28,39 @@ def clean_text(text: str) -> str:
     
     return text
 
-def preprocess_texts(df: pd.DataFrame, text_col: str = 'review') -> pd.DataFrame:
+def preprocess_texts(df: pd.DataFrame, text_col: str = 'content', score_col: str = 'score') -> pd.DataFrame:
     """
-    Applique le nettoyage à la colonne texte.
+    Applique le nettoyage au texte et convertit les scores en sentiments.
+    
+    Args:
+        df: DataFrame avec les avis
+        text_col: nom de la colonne contenant le texte (default: 'content')
+        score_col: nom de la colonne contenant le score (default: 'score')
+    
+    Returns:
+        DataFrame avec textes nettoyés et sentiments convertis
     """
+    if text_col not in df.columns:
+        logger.error(f"Colonne {text_col} manquante dans le dataset")
+        return pd.DataFrame()
+        
+    if score_col not in df.columns:
+        logger.error(f"Colonne {score_col} manquante dans le dataset")
+        return pd.DataFrame()
+
+    # Nettoyage du texte
     df[text_col] = df[text_col].apply(clean_text)
     df = df[df[text_col].str.len() > 10]  # Filtrer textes trop courts
-    logger.info(f"Après nettoyage : {len(df)} lignes.")
+    
+    # Conversion des scores en sentiments (1-2: négatif, 3: neutre, 4-5: positif)
+    df['sentiment'] = df[score_col].apply(lambda x: 0 if x <= 2 else (2 if x >= 4 else 1))
+    
+    logger.info(f"Après nettoyage : {len(df)} lignes avec distribution des sentiments :")
+    logger.info(df['sentiment'].value_counts())
+    
     return df
 
-def tokenize_data(df: pd.DataFrame, text_col: str = 'review', max_length: int = 512, test_size: float = 0.2) -> dict:
+def tokenize_data(df: pd.DataFrame, text_col: str = 'content', max_length: int = 512, test_size: float = 0.2) -> dict:
     """
     Tokenise avec BERT tokenizer. Split train/val.
     Retourne dict : {'train': tensors, 'val': tensors} avec input_ids, attention_mask, labels.
@@ -83,7 +106,18 @@ def tokenize_data(df: pd.DataFrame, text_col: str = 'review', max_length: int = 
 # Exemple d'usage
 if __name__ == "__main__":
     from data_extraction import load_sentiment_data
-    df = load_sentiment_data(r"C:\Users\jeora\Downloads\dataset.csv")
-    df_clean = preprocess_texts(df)
-    datasets = tokenize_data(df_clean)
-    print("Exemple token input_ids shape:", datasets['train']['input_ids'].shape)
+    
+    # Chemin vers votre fichier de données
+    file_path = r"C:\Users\jeora\Downloads\dataset.csv"
+    
+    # Chargement et prétraitement
+    df = load_sentiment_data(file_path)
+    if not df.empty:
+        df_clean = preprocess_texts(df)
+        if not df_clean.empty:
+            datasets = tokenize_data(df_clean, text_col='content')
+            print("\nExemple de dimensions des données :")
+            print("Train input_ids shape:", datasets['train']['input_ids'].shape)
+            print("Val input_ids shape:", datasets['val']['input_ids'].shape)
+        else:
+            print("Erreur lors du prétraitement des données")
