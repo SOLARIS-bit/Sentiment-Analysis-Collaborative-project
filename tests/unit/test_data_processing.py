@@ -27,8 +27,15 @@ def test_preprocess_texts():
     assert 'test html content longer than chars' in df_clean['content'].iloc[0]
 
 def test_tokenize_data():
-    df = pd.DataFrame({'content': ['Good movie longer than ten chars'], 'sentiment': [1]})
-    datasets = tokenize_data(df, text_col='content', test_size=0.1)  # Petit split pour test
+    df = pd.DataFrame({
+        'content': [
+            'Good movie longer than ten chars',
+            'Another good movie review',
+            'Third movie review for testing'
+        ], 
+        'sentiment': [1, 1, 0]
+    })
+    datasets = tokenize_data(df, text_col='content', test_size=0.33)  # Split 2/1
     assert datasets['train']['input_ids'].shape[0] == 1
     assert datasets['train']['labels'].shape == torch.Size([1])
     # Vérifier token IDs (CLS et SEP)
