@@ -1,4 +1,13 @@
 # tests/unit/test_data_processing.py
+import os
+import sys
+
+# When this test file is executed directly (python tests/unit/test_data_processing.py),
+# ensure the project root is on sys.path so `from src...` imports work.
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 import pytest
 import torch
 from transformers import AutoTokenizer
