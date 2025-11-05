@@ -35,3 +35,10 @@ def test_tokenize_data():
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
     expected = tokenizer('good movie')['input_ids']
     assert torch.equal(datasets['train']['input_ids'][0, :len(expected)], torch.tensor(expected))
+
+
+if __name__ == "__main__":
+    # When this file is executed directly, run pytest on this file so the test
+    # functions actually execute and produce output.
+    import pytest
+    raise SystemExit(pytest.main([__file__]))
