@@ -49,7 +49,7 @@ def compute_metrics(pred):
         'recall': recall
     }
 
-def train_model(data_path: str =  "Dataset.csv", output_dir: str = "./model_output", num_epochs: int = 3, max_length: int = 512):
+def train_model(data_path: str =  "Dataset.csv", output_dir: str = "./model_output", num_epochs: int = 3, max_length: int = 512, fast_dev_run: bool = False):
     """
     Fine-tune BERT sur le dataset sentiment.
     Étapes : Load → Clean → Tokenize → Train avec Trainer API.
@@ -63,10 +63,24 @@ def train_model(data_path: str =  "Dataset.csv", output_dir: str = "./model_outp
     Returns:
         Trainer: Instance du trainer fine-tuné.
     """
-    # 1. Load data
-    df = load_sentiment_data(data_path)
-    if df.empty:
-        raise ValueError("Impossible de charger les données.")
+    # 1. Load data (option fast_dev_run pour tests rapides sans dataset)
+    if fast_dev_run:
+        # Tiny toy dataset for fast local runs / CI
+        df = pd.DataFrame({
+            'content': [
+                'I loved this movie, it was fantastic and thrilling!',
+                'Terrible film, I hated it and it was boring.',
+                'It was okay, not great but watchable.',
+                'Amazing performance and great story.'
+            ],
+            # Use scores on 1-5 scale so preprocess_texts maps correctly
+            'score': [5, 1, 3, 5]
+        })
+        logger.info("fast_dev_run activé : dataset minimal créé pour tests locaux.")
+    else:
+        df = load_sentiment_data(data_path)
+        if df.empty:
+            raise ValueError("Impossible de charger les données.")
 
     # 2. Preprocess (clean)
     df_clean = preprocess_texts(df)
@@ -147,11 +161,31 @@ def load_fine_tuned_model(model_path: str = "./model_output"):
     model.eval()  # Mode inférence
     return model, tokenizer
 
-# Exemple d'usage
+# Exemple d'usage / CLI
 if __name__ == "__main__":
-    # Train (subsample si test : df = df.sample(1000) dans preprocess)
-    trainer = train_model()
-    
-    # Load pour test
-    model, tokenizer = load_fine_tuned_model()
-    print("Modèle chargé !")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Fine-tune BERT pour classification de sentiments (script d'aide).")
+    parser.add_argument("--data_path", type=str, default="Dataset.csv", help="Chemin vers le CSV de données")
+    parser.add_argument("--output_dir", type=str, default="./model_output", help="Dossier de sortie pour le modèle")
+    parser.add_argument("--num_epochs", type=int, default=3, help="Nombre d'époques")
+    parser.add_argument("--max_length", type=int, default=512, help="Max token length")
+    parser.add_argument("--fast_dev_run", action='store_true', help="Utiliser un tiny dataset pour un test local rapide (CPU)")
+
+    args = parser.parse_args()
+
+    # Lance l'entraînement (fast_dev_run utile si pas de dataset ou pas de GPU)
+    trainer = train_model(
+        data_path=args.data_path,
+        output_dir=args.output_dir,
+        num_epochs=args.num_epochs,
+        max_length=args.max_length,
+        fast_dev_run=args.fast_dev_run
+    )
+
+    # Exemple de chargement post-train (optionnel)
+    try:
+        model, tokenizer = load_fine_tuned_model(args.output_dir)
+        print("Modèle chargé depuis :", args.output_dir)
+    except Exception:
+        print("Modèle non trouvé dans le dossier de sortie (vérifiez que l'entraînement a bien sauvegardé le modèle).")
