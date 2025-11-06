@@ -108,22 +108,23 @@ def train_model(data_path: str =  "dataset.csv", output_dir: str = "./model_outp
     # 6. Data collator (padding dynamique)
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-    # 7. Training args
+       # 7. Training args
     training_args = TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=num_epochs,
-        per_device_train_batch_size=8,  # Ajuste selon GPU (16 si fort)
+        per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
         warmup_steps=500,
         weight_decay=0.01,
         logging_dir=f"{output_dir}/logs",
         logging_steps=100,
-        evaluation_strategy=True,
-        save_strategy="epoch",
+        evaluation_strategy="epoch",  # ✅ évalue à la fin de chaque epoch
+        save_strategy="epoch",        # ✅ sauvegarde à chaque epoch
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
-        report_to="none"  # Pas de wandb/tensorboard si pas installé
+        report_to="none"  # évite les erreurs si wandb/tensorboard non installés
     )
+
 
     # 8. Trainer
     trainer = Trainer(
