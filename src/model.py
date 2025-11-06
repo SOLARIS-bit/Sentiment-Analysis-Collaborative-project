@@ -174,6 +174,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    csv_path = r"C:\Users\jeora\Downloads\dataset.csv"
+    args.data_path = csv_path
+
+    print(f"✅ Chargement du dataset depuis : {args.data_path}")
+
     # Lance l'entraînement (fast_dev_run utile si pas de dataset ou pas de GPU)
     trainer = train_model(
         data_path=args.data_path,
