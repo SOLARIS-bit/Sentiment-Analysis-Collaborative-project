@@ -49,7 +49,7 @@ def compute_metrics(pred):
         'recall': recall
     }
 
-def train_model(data_path: str = "data/IMDB Dataset.csv", output_dir: str = "./model_output", num_epochs: int = 3, max_length: int = 512):
+def train_model(data_path: str =  "Dataset.csv", output_dir: str = "./model_output", num_epochs: int = 3, max_length: int = 512):
     """
     Fine-tune BERT sur le dataset sentiment.
     Étapes : Load → Clean → Tokenize → Train avec Trainer API.
