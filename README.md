@@ -1,6 +1,3 @@
----
-
-````{"id":"50831","variant":"standard","title":"README.md – Projet d’Analyse de Sentiments Collaboratif"}
 # 🧠 Projet d’Analyse de Sentiments Collaboratif
 
 Ce projet vise à construire un **pipeline complet d’analyse de sentiments** basé sur le modèle **BERT**, en collaboration entre deux étudiants.  
