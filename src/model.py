@@ -6,7 +6,7 @@ from data_extraction import load_data  # Assume tu as une func pour charger les 
 from data_processing import preprocess_data  # Assume pour tokeniser et splitter
 
 # Chargement des données (adapte selon ton setup)
-df = load_data('path/to/your/sentiment_data.csv')  # Ex: colonnes 'text', 'label'
+df = load_data(r"C:\\Users\\jeora\\Downloads\\dataset.csv")  # Ex: colonnes 'text', 'label'
 train_df, val_df = preprocess_data(df)  # Retourne DataFrames tokenisés (ajoute 'input_ids', 'attention_mask', 'labels')
 
 # Conversion en Dataset Hugging Face
